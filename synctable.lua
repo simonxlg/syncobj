@@ -45,7 +45,7 @@ make = function(root,tab,tag)
 						else
 							data[k] = v
 						end
-						root.__pairs[s.__tag.."."..k] = v or "nil"
+						root.__pairs[s.__tag.."."..k] = v or "__nil"
 					end,
 			__index = function (s, k)
 						return s.__data[k]
@@ -74,7 +74,11 @@ function synctable.patch(obj,diff)
 		for i=2,len-3 do
 			curr = obj[arr[i]]
 		end
-		curr[arr[len]] = v
+		if v == "__nil" then 
+			curr[arr[len]] = nil
+		else
+			curr[arr[len]] = v
+		end
 	end
 	return obj
 end
