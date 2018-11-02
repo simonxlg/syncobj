@@ -5,9 +5,9 @@
 local pairs = pairs
 local setmetatable = setmetatable
 local synctable = {}
-
 local new
 local make
+
 new = function(root,tab,tag)
 	local _tab = {}
 	local _root = root
@@ -33,7 +33,7 @@ make = function(root,tab,tag)
 		}
 	if not root then 
 		proxy.__root = proxy
-		proxy.__pairs ={}
+		proxy.__pair ={}
 	end
 	setmetatable(proxy,{
 		__newindex = function(s, k, v)
@@ -45,11 +45,17 @@ make = function(root,tab,tag)
 						else
 							data[k] = v
 						end
-						root.__pairs[s.__tag.."."..k] = v or "__nil"
+						table.insert(root.__pair,{[s.__tag.."."..k] = v or "nil"})
 					end,
-			__index = function (s, k)
+		__index = function (s, k)
 						return s.__data[k]
-					end
+					end,
+		__pairs = function(tab)
+					return next, tab.__data ,nil
+				  end,
+		__len = function (tab)
+			       return #tab.__data
+				end
 	})
 	return proxy
 end
@@ -60,24 +66,23 @@ function synctable.create(tab)
 end
 
 function synctable.diff(tab)
-	local diff = tab.__pairs
-	tab.__pairs = {}
+	local diff = tab.__pair
+	tab.__pair = {}
 	return diff
 end
 
 function synctable.patch(obj,diff)
-	for k,v in pairs(diff) do
-		local arr = {}
-		for w in k:gmatch("([^.]+)") do table.insert(arr,w) end
-		local curr = obj
-		local len = #arr
-		for i=2,len-3 do
-			curr = obj[arr[i]]
-		end
-		if v == "__nil" then 
-			curr[arr[len]] = nil
-		else
-			curr[arr[len]] = v
+	for i = 1 ,#diff do 
+		for k,v in pairs(diff[i]) do
+			local arr = {}
+			for w in k:gmatch("([^.]+)") do table.insert(arr,w) end
+			local curr = obj
+			local len = #arr
+			for i=2,len-1 do
+				curr = curr[tonumber(arr[i]) or (arr[i])]
+				assert(curr,string.format("key err=%s",arr[i]))
+			end
+			curr[tonumber(arr[len]) or (arr[len])] = v
 		end
 	end
 	return obj

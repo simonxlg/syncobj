@@ -41,6 +41,7 @@ end
 local tab = {a=1,b=2,c={c_1 = {c_2={c_3="c_3"}}},d={{1},{2},{3}}}
 local tab2 = {a=1,b=2,c={c_1 = {c_2={c_3="c_3"}}},d={{1},{2},{3}}}
 print('{a=1,b=2,c={c_1 = {c_2={c_3="c_3"}}},d={{1},{2},{3}}}')
+
 tab = synctable.create(tab)
 
 tab.c.c_1.c_2.c_3 = "c_4"
