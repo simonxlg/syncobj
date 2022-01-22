@@ -147,7 +147,7 @@ function synctable.insert(list, obj)
 end
 
 --[[
---假设这段代码是 DB代理 从数据中读出来的，并且本地也留一个副本
+--假设这段代码是 DB代理 从数据中读出来的
 local userinfo = {user_id = 10001, nickname = "simon", gold = 8888, arr = {1,2,3,4,5}} 
 --处理逻辑的模块是在另一台机器上，并且通过网络传输得到了 userinfo
 local userinfo2 = synctable.create(userinfo)
