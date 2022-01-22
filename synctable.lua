@@ -18,8 +18,8 @@ synctable 解决的问题是数据同步存在的痛点
 
 限制：
 	由于 synctable 是利用了 table 的 __newindex 来记录变化，所以在使用通过 synctable.create(userinfo) 生产出来的副本时候有下列限制：
-		1.数组的元素增删需要用 synctable.remove 替换 table.remove、 synctable.insert table.insert 
-		2.如果动态加了新字段或者 数组 insert 元素，以及 数组 remove 元素。都要及时同步。
+		1.数组的元素增删需要用 synctable.remove 替换 table.remove、 synctable.insert table.insert
+		2.如果动态加了新字段或者 数组 insert 元素，以及 数组 remove 元素。都要及时同步，否则会导致异常。
 		3.不要对 synctable 生成的副本频繁加字段删字段，而是改变字段的值！！！
 ]]
 
@@ -31,7 +31,7 @@ local new
 local make
 
 local function distinct_insert(array, key, value)
-	print("distinct_insert", key, value)
+	-- print("distinct_insert", key, value)
 	for i=1,#array do
 		for k,v in pairs(array[i]) do
 			if k == key then
@@ -44,7 +44,7 @@ local function distinct_insert(array, key, value)
 	insert(array, {[key] = value})
 end
 
-new = function(root,tab,tag)
+new = function(root, tab, tag)
 	-- print("new:", tag)
 	local _tab = {}
 	local _root = root
@@ -62,7 +62,7 @@ new = function(root,tab,tag)
 	return ret
 end
 
-make = function(root,tab,tag)
+make = function(root, tab, tag)
 	local proxy = {
 			__data = tab,
 			__tag = tag,
@@ -74,7 +74,7 @@ make = function(root,tab,tag)
 	end
 	setmetatable(proxy,{
 		__newindex = function(s, k, v)
-						print("__newindex", k, v)
+						-- print("__newindex", k, v)
 						local root = s.__root
 						local tag = s.__tag
 						local data = s.__data
@@ -100,7 +100,7 @@ end
 
 function synctable.create(tab)
 	local _tag = "root"
-	return new(nil,tab,_tag)
+	return new(nil, tab, _tag)
 end
 
 function synctable.diff(tab)
@@ -109,11 +109,11 @@ function synctable.diff(tab)
 	return diff
 end
 
-function synctable.patch(obj,diff)
+function synctable.patch(obj, diff)
 	for i = 1 ,#diff do 
 		for k,v in pairs(diff[i]) do
 			local arr = {}
-			for w in k:gmatch("([^.]+)") do insert(arr,w) end
+			for w in k:gmatch("([^.]+)") do insert(arr, w) end
 			local curr = obj
 			local len = #arr
 			for i=2,len-1 do
@@ -121,8 +121,12 @@ function synctable.patch(obj,diff)
 				assert(curr, string.format("\n%s=%s", tostring(k) , tostring(v))) 
 			end
 			curr[tonumber(arr[len]) or (arr[len])] = v
-			if v == "nil" and tonumber(arr[len]) then
-				table.remove(curr,tonumber(arr[len]))
+			if v == "nil" then
+				if curr[tonumber(arr[len])] then
+					table.remove(curr, tonumber(arr[len]))
+				else
+					curr[(arr[len])] = nil
+				end
 			end
 		end
 	end
@@ -144,17 +148,20 @@ end
 
 --[[
 --假设这段代码是 DB代理 从数据中读出来的，并且本地也留一个副本
-local userinfo = {user_id = 10001, nickname = "simon", gold = 8888} 
-
+local userinfo = {user_id = 10001, nickname = "simon", gold = 8888, arr = {1,2,3,4,5}} 
 --处理逻辑的模块是在另一台机器上，并且通过网络传输得到了 userinfo
 local userinfo2 = synctable.create(userinfo)
 --用户玩游戏得到了 1111 个金币
 userinfo2.gold = userinfo2.gold + 1111
+--增加或者减少元素，增加或者减少字段都要第一时间同步，也就是生成 diff 推送给正本进行 patch
+synctable.remove(userinfo2.arr, 2)
 --生成变化记录（发送给 DB代理）
 local diff = synctable.diff(userinfo2)
 
 --DB代理 用之前的 userinfo 和 处理逻辑的模块 传过来的 diff，合成最新数据
-synctable.patch(userinfo,diff)
+synctable.patch(userinfo, diff)
+--打印
+print(table.concat(userinfo.arr, ","))
 print(userinfo.gold)
 --]]
 
