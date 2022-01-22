@@ -1,6 +1,3 @@
-# syncobj
-可以增量更新数据的库，服务端用lua，客户端可以用lua或者js
-
 synctable 解决的问题是数据同步存在的痛点
 典型的场景：
 	如果有一个 table userinfo = {user_id = 10001, nickname = "simon", gold = 8888}
@@ -16,6 +13,6 @@ synctable 解决的问题是数据同步存在的痛点
 
 限制：
 	由于 synctable 是利用了 table 的 __newindex 来记录变化，所以在使用通过 synctable.create(userinfo) 生产出来的副本时候有下列限制：
-		1.数组的元素增删需要用 synctable.remove 替换 table.remove、 synctable.insert table.insert 
-		2.如果动态加了新字段或者 数组 insert 元素，以及 数组 remove 元素。都要及时同步。
+		1.数组的元素增删需要用 synctable.remove 替换 table.remove、 synctable.insert table.insert
+		2.如果动态加了新字段或者 数组 insert 元素，以及 数组 remove 元素。都要及时同步，否则会导致异常。
 		3.不要对 synctable 生成的副本频繁加字段删字段，而是改变字段的值！！！
